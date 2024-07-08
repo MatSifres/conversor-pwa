@@ -187,23 +187,21 @@
 
                 let result;
                 if (currency1 === 'USD' && currency2 === 'ARS') {
-                    result = amount1 * blueDollarRate;
+                    let usdAmount = amount1;
                     if (taxCheckbox.checked) {
-                        result *= 1.07; // Aplicar impuesto solo cuando se convierte de USD a ARS
+                        usdAmount *= 1.07; // Aplicar impuesto al valor en USD
                     }
+                    result = usdAmount * blueDollarRate; // Luego multiplicar por el tipo de cambio
                 } else if (currency1 === 'ARS' && currency2 === 'USD') {
+                    result = amount1 / blueDollarRate;
                     if (taxCheckbox.checked) {
-                        result = amount1 / (blueDollarRate * 1.07); // Aplicar impuesto en la conversión inversa
-                    } else {
-                        result = amount1 / blueDollarRate;
+                        result /= 1.07; // Dividir por 1.07 para obtener el valor sin impuesto
                     }
                 } else {
                     result = amount1; // Mismo tipo de moneda
                 }
 
                 document.getElementById('amount2').value = formatNumber(result);
-
-                // No actualizamos el input1 aquí para evitar el doble impuesto
             } catch (error) {
                 console.error('Error en la conversión:', error);
                 alert('Ocurrió un error durante la conversión. Por favor, intente nuevamente.');
