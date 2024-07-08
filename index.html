@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+
+    <link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icon.svg">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Conversor de Moneda</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #F2F2F7;
+        }
+        .ios-input {
+            background-color: rgba(142, 142, 147, 0.12);
+            border-radius: 10px;
+            padding: 10px 15px;
+            font-size: 17px;
+            color: #000;
+        }
+        .ios-select {
+            background-color: transparent;
+            border: none;
+            font-size: 17px;
+            color: #007AFF;
+            padding-right: 20px;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007AFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 5px center;
+            background-size: 12px auto;
+        }
+        .ios-button {
+            background-color: #007AFF;
+            color: white;
+            border-radius: 10px;
+            font-size: 17px;
+            font-weight: 600;
+            padding: 12px;
+            transition: background-color 0.3s;
+        }
+        .ios-button:active {
+            background-color: #0056b3;
+        }
+        .ios-switch {
+            position: relative;
+            display: inline-block;
+            width: 51px;
+            height: 31px;
+        }
+        .ios-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #E9E9EA;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 27px;
+            width: 27px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #34C759;
+        }
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+    <nav class="bg-white shadow-sm p-4">
+        <h1 class="text-xl font-semibold text-center">Conversor de Moneda</h1>
+    </nav>
+    <main class="flex-grow p-6 space-y-6">
+        <div class="space-y-4">
+            <div class="flex items-center space-x-4">
+                <input type="number" id="amount1" class="ios-input flex-grow" placeholder="0">
+                <select id="currency1" class="ios-select">
+                    <option value="USD">USD</option>
+                    <option value="ARS">ARS</option>
+                </select>
+            </div>
+            <div class="flex items-center justify-center">
+                <button id="swapBtn" class="text-2xl">🔄</button>
+            </div>
+            <div class="flex items-center space-x-4">
+                <input type="number" id="amount2" class="ios-input flex-grow" placeholder="0" readonly>
+                <select id="currency2" class="ios-select">
+                    <option value="ARS">ARS</option>
+                    <option value="USD">USD</option>
+                </select>
+            </div>
+        </div>
+        <div class="flex items-center justify-between">
+            <span>Impuesto del 7% (USD)</span>
+            <label class="ios-switch">
+                <input type="checkbox" id="taxCheckbox">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <button id="convertBtn" class="ios-button w-full">Convertir</button>
+    </main>
+
+    <script>
+        const rates = {
+            "USD": { "ARS": 350 },
+            "ARS": { "USD": 1 / 350 }
+        };
+
+        function convert() {
+            const amount1 = parseFloat(document.getElementById('amount1').value);
+            const currency1 = document.getElementById('currency1').value;
+            const currency2 = document.getElementById('currency2').value;
+            const taxCheckbox = document.getElementById('taxCheckbox');
+
+            if (isNaN(amount1)) {
+                alert('Por favor, ingrese un número válido');
+                return;
+            }
+
+            let result = amount1 * rates[currency1][currency2];
+
+            if (taxCheckbox.checked && currency2 === 'USD') {
+                result *= 1.07;
+            }
+
+            document.getElementById('amount2').value = result.toFixed(2);
+        }
+
+        function swapCurrencies() {
+            const currency1 = document.getElementById('currency1');
+            const currency2 = document.getElementById('currency2');
+            [currency1.value, currency2.value] = [currency2.value, currency1.value];
+            convert();
+        }
+
+        document.getElementById('convertBtn').addEventListener('click', convert);
+        document.getElementById('swapBtn').addEventListener('click', swapCurrencies);
+        document.getElementById('amount1').addEventListener('input', convert);
+        document.getElementById('currency1').addEventListener('change', convert);
+        document.getElementById('currency2').addEventListener('change', convert);
+        document.getElementById('taxCheckbox').addEventListener('change', convert);
+    </script>
+</body>
+</html>
