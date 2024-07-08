@@ -155,6 +155,7 @@
         }
 
         function formatNumber(number) {
+            if (isNaN(number)) return '';
             return number.toLocaleString('es-AR', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
@@ -163,53 +164,49 @@
         }
 
         function parseFormattedNumber(formattedNumber) {
+            if (typeof formattedNumber !== 'string') return NaN;
             return parseFloat(formattedNumber.replace(/\./g, '').replace(',', '.'));
         }
 
         function convert() {
-            const amount1 = parseFormattedNumber(document.getElementById('amount1').value);
-            const currency1 = document.getElementById('currency1').value;
-            const currency2 = document.getElementById('currency2').value;
-            const taxCheckbox = document.getElementById('taxCheckbox');
+            try {
+                const amount1 = parseFormattedNumber(document.getElementById('amount1').value);
+                const currency1 = document.getElementById('currency1').value;
+                const currency2 = document.getElementById('currency2').value;
+                const taxCheckbox = document.getElementById('taxCheckbox');
 
-            if (isNaN(amount1)) {
-                document.getElementById('amount2').value = '';
-                return;
-            }
-
-            if (blueDollarRate === 0) {
-                alert('Esperando cotización actualizada. Por favor, intente nuevamente.');
-                return;
-            }
-
-            let result;
-            if (currency1 === 'USD' && currency2 === 'ARS') {
-                result = amount1 * blueDollarRate;
-            } else if (currency1 === 'ARS' && currency2 === 'USD') {
-                result = amount1 / blueDollarRate;
-            } else {
-                result = amount1; // Mismo tipo de moneda
-            }
-
-            if (taxCheckbox.checked) {
-                if (currency2 === 'USD') {
-                    result /= 1.07; // Dividimos por 1.07 para obtener el valor sin impuesto
-                } else if (currency1 === 'USD') {
-                    result *= 1.07; // Multiplicamos por 1.07 para agregar el impuesto
+                if (isNaN(amount1)) {
+                    document.getElementById('amount2').value = '';
+                    return;
                 }
-            }
 
-            document.getElementById('amount2').value = formatNumber(result);
-
-            // Actualizar el input1 si el impuesto está activado
-            if (taxCheckbox.checked) {
-                let updatedAmount1 = amount1;
-                if (currency1 === 'USD') {
-                    updatedAmount1 *= 1.07;
-                } else if (currency2 === 'USD') {
-                    updatedAmount1 /= 1.07;
+                if (blueDollarRate === 0) {
+                    alert('Esperando cotización actualizada. Por favor, intente nuevamente.');
+                    return;
                 }
-                document.getElementById('amount1').value = formatNumber(updatedAmount1);
+
+                let result;
+                if (currency1 === 'USD' && currency2 === 'ARS') {
+                    result = amount1 * blueDollarRate;
+                    if (taxCheckbox.checked) {
+                        result *= 1.07; // Aplicar impuesto solo cuando se convierte de USD a ARS
+                    }
+                } else if (currency1 === 'ARS' && currency2 === 'USD') {
+                    if (taxCheckbox.checked) {
+                        result = amount1 / (blueDollarRate * 1.07); // Aplicar impuesto en la conversión inversa
+                    } else {
+                        result = amount1 / blueDollarRate;
+                    }
+                } else {
+                    result = amount1; // Mismo tipo de moneda
+                }
+
+                document.getElementById('amount2').value = formatNumber(result);
+
+                // No actualizamos el input1 aquí para evitar el doble impuesto
+            } catch (error) {
+                console.error('Error en la conversión:', error);
+                alert('Ocurrió un error durante la conversión. Por favor, intente nuevamente.');
             }
         }
 
@@ -223,9 +220,16 @@
         let typingTimer;
         const doneTypingInterval = 500; // ms
 
-        document.getElementById('convertBtn').addEventListener('click', convert);
-        document.getElementById('swapBtn').addEventListener('click', swapCurrencies);
-        document.getElementById('amount1').addEventListener('input', function(e) {
+        function initializeEventListeners() {
+            document.getElementById('convertBtn').addEventListener('click', convert);
+            document.getElementById('swapBtn').addEventListener('click', swapCurrencies);
+            document.getElementById('amount1').addEventListener('input', handleInput);
+            document.getElementById('currency1').addEventListener('change', convert);
+            document.getElementById('currency2').addEventListener('change', convert);
+            document.getElementById('taxCheckbox').addEventListener('change', convert);
+        }
+
+        function handleInput(e) {
             clearTimeout(typingTimer);
             const input = e.target;
             const cursorPosition = input.selectionStart;
@@ -243,15 +247,22 @@
             input.setSelectionRange(newCursorPosition, newCursorPosition);
 
             typingTimer = setTimeout(convert, doneTypingInterval);
-        });
-        document.getElementById('currency1').addEventListener('change', convert);
-        document.getElementById('currency2').addEventListener('change', convert);
-        document.getElementById('taxCheckbox').addEventListener('change', convert);
+        }
 
-        // Obtener cotización al cargar la página
-        fetchBlueDollarRate();
-        // Actualizar cotización cada 5 minutos
-        setInterval(fetchBlueDollarRate, 300000);
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeEventListeners();
+            fetchBlueDollarRate();
+            // Actualizar cotización cada 5 minutos
+            setInterval(fetchBlueDollarRate, 300000);
+        });
+
+        // Manejo global de errores
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.error('Error no capturado:', message, 'en', source, 'línea', lineno);
+            alert('Ocurrió un error inesperado. Por favor, recargue la página e intente nuevamente.');
+            return true; // Previene el comportamiento por defecto del error
+        };
     </script>
 </body>
 </html>
